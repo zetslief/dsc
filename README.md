@@ -1,3 +1,3 @@
 # DSC
 
-Simple data structures in C? 
+Siplines in C.
