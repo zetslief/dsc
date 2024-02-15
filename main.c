@@ -36,10 +36,11 @@ void delete_line(Line* line) {
 
 void main() {
     Line line = create_line(
-            100, 100,
-            700, 100,
-            700, 500,
-            100, 500);
+        100, 100,
+        700, 100,
+        700, 500,
+        100, 500
+    );
 
     InitWindow(800, 600, "Hello, raylib");
 
@@ -55,6 +56,16 @@ void main() {
             int x = width / 2 - textWidth / 2;
             int y = height / 2 - textHeight / 2;
             DrawText(text, x, y, textHeight, BLACK);
+
+            for (int pivotIndex = 0; pivotIndex < line.pivotCount; ++pivotIndex) {
+                Pivot currentPivot = line.pivots[pivotIndex];
+                Pivot nextPivot = line.pivots[(pivotIndex  + 1) % line.pivotCount];
+                DrawLine(
+                    currentPivot.x, currentPivot.y,
+                    nextPivot.x, nextPivot.y,
+                    BLACK
+                );
+            }
 
             for (int pivotIndex = 0; pivotIndex < line.pivotCount; ++pivotIndex) {
                 Pivot pivot = line.pivots[pivotIndex];
