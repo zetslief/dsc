@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "assert.h"
+#include "string.h"
 #include "raylib/include/raylib.h"
 
 #define RADIUS 10
@@ -24,7 +25,7 @@ Line create_line(Pivot start, Pivot stop, int steps) {
     float step = (stop.x - start.x) / steps;
     float a = (stop.y - start.y) / (stop.x - start.x);
     float b = start.y - a * start.x;
-    Pivot* pivots = malloc(sizeof(Line) * total_length);
+    Pivot* pivots = malloc(sizeof(Pivot) * total_length);
     pivots[0] = start;
     for (int pivotIndex = 1; pivotIndex < total_length - 1; ++pivotIndex) {
         float x = start.x + step * pivotIndex;
@@ -37,14 +38,34 @@ Line create_line(Pivot start, Pivot stop, int steps) {
     return line;
 }
 
-void delete_line(Line* line) {
-    free(line->pivots);
+void delete_line(Line line) {
+    free(line.pivots);
+}
+
+Line create_spline(Pivot start, Pivot stop, Pivot middle, int steps) {
+    Line first = create_line(start, middle, steps / 2);
+    Line second = create_line(middle, stop, steps / 2);
+    int length = first.pivotCount + second.pivotCount - 1;
+    Pivot* output = malloc(sizeof(Pivot) * length);
+    memcpy(output, first.pivots, sizeof(Pivot) * first.pivotCount);
+    memcpy(
+        output + first.pivotCount,
+        second.pivots + 1,
+        sizeof(Pivot) * (second.pivotCount - 1)
+    );
+    delete_line(first);
+    delete_line(second);
+    Line result = { .pivots = output, .pivotCount = length };
+    return result;
 }
 
 void main() {
     Pivot start = { .x = 100, .y = 100 };
-    Pivot stop = { .x = 700, .y = 500 };
+    Pivot stop = { .x = 500, .y = 100 };
     Line line = create_line(start, stop, 10);
+
+    Pivot middle = { .x = 300, .y = 300 };
+    Line spline = create_spline(start, stop, middle, 10); 
 
     InitWindow(800, 600, "Hello, raylib");
 
@@ -56,6 +77,16 @@ void main() {
             for (int pivotIndex = 0; pivotIndex < line.pivotCount - 1; ++pivotIndex) {
                 Pivot currentPivot = line.pivots[pivotIndex];
                 Pivot nextPivot = line.pivots[pivotIndex  + 1];
+                DrawLine(
+                    currentPivot.x, currentPivot.y,
+                    nextPivot.x, nextPivot.y,
+                    BLACK
+                );
+            }
+
+            for (int pivotIndex = 0; pivotIndex < line.pivotCount - 1; ++ pivotIndex) {
+                Pivot currentPivot = spline.pivots[pivotIndex];
+                Pivot nextPivot = spline.pivots[pivotIndex + 1];
                 DrawLine(
                     currentPivot.x, currentPivot.y,
                     nextPivot.x, nextPivot.y,
@@ -81,5 +112,5 @@ void main() {
 
     CloseWindow();
 
-    delete_line(&line);
+    delete_line(line);
 }
