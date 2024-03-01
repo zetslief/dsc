@@ -99,6 +99,11 @@ void main() {
                 DrawCircle(pivot.x, pivot.y, RADIUS, RED);
             }
 
+            for (int pivotIndex = 0; pivotIndex < spline.pivotCount; ++pivotIndex) {
+                Pivot pivot = spline.pivots[pivotIndex];
+                DrawCircle(pivot.x, pivot.y, RADIUS, RED);
+            }
+
             int width = GetScreenWidth();
             int height = GetScreenHeight();
             int textHeight = 20;
