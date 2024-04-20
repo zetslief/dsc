@@ -31,24 +31,6 @@ bool is_point_inside_pivot(float x, float y, float x0, float y0, float radius) {
     return distance(x, y, x0, y0) < radius;
 }
 
-Line create_line(Pivot start, Pivot stop, int steps) {
-    int total_length = 2 + steps;
-    float step = (stop.x - start.x) / steps;
-    float a = (stop.y - start.y) / (stop.x - start.x);
-    float b = start.y - a * start.x;
-    Pivot* pivots = malloc(sizeof(Pivot) * total_length);
-    pivots[0] = start;
-    for (int pivotIndex = 1; pivotIndex < total_length - 1; ++pivotIndex) {
-        float x = start.x + step * pivotIndex;
-        float y = calculate_line(x, a, b);
-        Pivot pivot = { .x = x, .y = y };
-        pivots[pivotIndex] = pivot;
-    }
-    pivots[total_length - 1] = stop;
-    Line line = { .pivots = pivots, .pivotCount = total_length };
-    return line;
-}
-
 Line allocate_line(int length) {
     Pivot* pivots = malloc(sizeof(Pivot) * length);
     Line line = { .pivots = pivots, .pivotCount = length };
@@ -59,18 +41,33 @@ void delete_line(Line line) {
     free(line.pivots);
 }
 
-Line create_spline(Pivot start, Pivot stop, Pivot middle, int steps) {
-    Line line = allocate_line(steps);
+float interpolate(float a, float b, float t) {
+    return a + (b - a) * t;
+}
+
+Line create_spline(Pivot start, Pivot stop, Pivot middle, uint steps) {
+    Line line = allocate_line(steps + 1);
+    for (uint step = 0; step < steps; ++step) {
+        float t = (float)step / steps;
+        float firstX = interpolate(start.x, middle.x, t);
+        float firstY = interpolate(start.y, middle.y, t);
+        float secondX = interpolate(middle.x, stop.x, t); 
+        float secondY = interpolate(middle.y, stop.y, t); 
+        float x = interpolate(firstX, secondX, t);
+        float y = interpolate(firstY, secondY, t);
+        line.pivots[step] = (Pivot) { .x = x, .y = y };
+    }
+    line.pivots[steps] = stop;
     return line;
 }
 
 void main() {
     Pivot start = { .x = 100, .y = 100 };
     Pivot stop = { .x = 500, .y = 100 };
-    Line line = create_line(start, stop, 10);
-
     Pivot middle = { .x = 300, .y = 300 };
-    Line spline = create_spline(start, stop, middle, 10); 
+
+    const uint numberOfPivots = 3;
+    Pivot* movablePivots[] = {&start, &stop, &middle};
 
     InitWindow(800, 600, "Hello, raylib");
 
@@ -78,20 +75,11 @@ void main() {
     {
         BeginDrawing();
             ClearBackground(DARKGRAY);
+            Line spline = create_spline(start, stop, middle, 10);
 
-            for (int pivotIndex = 0; pivotIndex < line.pivotCount - 1; ++pivotIndex) {
-                Pivot currentPivot = line.pivots[pivotIndex];
-                Pivot nextPivot = line.pivots[pivotIndex  + 1];
-                DrawLine(
-                    currentPivot.x, currentPivot.y,
-                    nextPivot.x, nextPivot.y,
-                    BLACK
-                );
-            }
-
-            for (int pivotIndex = 0; pivotIndex < line.pivotCount - 1; ++ pivotIndex) {
+            for (int pivotIndex = 0; pivotIndex < spline.pivotCount - 1; ++pivotIndex) {
                 Pivot currentPivot = spline.pivots[pivotIndex];
-                Pivot nextPivot = spline.pivots[pivotIndex + 1];
+                Pivot nextPivot = spline.pivots[pivotIndex  + 1];
                 DrawLine(
                     currentPivot.x, currentPivot.y,
                     nextPivot.x, nextPivot.y,
@@ -101,32 +89,17 @@ void main() {
 
             int mouseX = GetMouseX();
             int mouseY = GetMouseY();
-            for (int pivotIndex = 0; pivotIndex < line.pivotCount; ++pivotIndex) {
-                Pivot pivot = line.pivots[pivotIndex];
+            for (int pivotIndex = 0; pivotIndex < numberOfPivots; ++pivotIndex) {
+                Pivot* pivot = movablePivots[pivotIndex];
                 Color color = BLUE;
-                if (is_point_inside_pivot(mouseX, mouseY, pivot.x, pivot.y, RADIUS)) {
+                if (is_point_inside_pivot(mouseX, mouseY, pivot->x, pivot->y, RADIUS)) {
                     color = RED;
                     if (IsMouseButtonDown(0)) {
-                        pivot.x = mouseX;
-                        pivot.y = mouseY;
-                        line.pivots[pivotIndex] = pivot;
+                        pivot->x = mouseX;
+                        pivot->y = mouseY;
                     }
                 }
-                DrawCircle(pivot.x, pivot.y, RADIUS, color);
-            }
-
-            for (int pivotIndex = 0; pivotIndex < spline.pivotCount; ++pivotIndex) {
-                Pivot pivot = spline.pivots[pivotIndex];
-                Color color = BLUE;
-                if (is_point_inside_pivot(mouseX, mouseY, pivot.x, pivot.y, RADIUS)) {
-                    color = RED;
-                    if (IsMouseButtonDown(0)) {
-                        pivot.x = mouseX;
-                        pivot.y = mouseY;
-                        line.pivots[pivotIndex] = pivot;
-                    }
-                }
-                DrawCircle(pivot.x, pivot.y, RADIUS, color);
+                DrawCircle(pivot->x, pivot->y, RADIUS, color);
             }
 
             int width = GetScreenWidth();
@@ -137,10 +110,9 @@ void main() {
             int x = width / 2 - textWidth / 2;
             int y = height / 2 - textHeight / 2;
             DrawText(text, x, y, textHeight, BLACK);
+            delete_line(spline);
         EndDrawing();
     }
 
     CloseWindow();
-
-    delete_line(line);
 }
