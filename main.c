@@ -5,7 +5,7 @@
 #include "string.h"
 #include "raylib/include/raylib.h"
 
-#define RADIUS 10
+#define RADIUS 20
 
 typedef struct {
     float x;
@@ -63,8 +63,8 @@ Line create_spline(Pivot start, Pivot stop, Pivot middle, uint steps) {
 
 void main() {
     Pivot start = { .x = 100, .y = 100 };
-    Pivot stop = { .x = 500, .y = 100 };
-    Pivot middle = { .x = 300, .y = 300 };
+    Pivot stop = { .x = 700, .y = 100 };
+    Pivot middle = { .x = 400, .y = 450 };
 
     const uint numberOfPivots = 3;
     Pivot* movablePivots[] = {&start, &stop, &middle};
@@ -75,16 +75,47 @@ void main() {
     {
         BeginDrawing();
             ClearBackground(DARKGRAY);
-            Line spline = create_spline(start, stop, middle, 10);
+            Line spline1 = create_spline(start, stop, middle, 30);
+            Line spline2 = create_spline(stop, middle, start, 30);
+            Line spline3 = create_spline(middle, start, stop, 30);
 
-            for (int pivotIndex = 0; pivotIndex < spline.pivotCount - 1; ++pivotIndex) {
-                Pivot currentPivot = spline.pivots[pivotIndex];
-                Pivot nextPivot = spline.pivots[pivotIndex  + 1];
+            for (int pivotIndex = 0; pivotIndex < spline1.pivotCount - 1; ++pivotIndex) {
+                Pivot currentPivot = spline1.pivots[pivotIndex];
+                Pivot nextPivot = spline1.pivots[pivotIndex  + 1];
                 DrawLine(
                     currentPivot.x, currentPivot.y,
                     nextPivot.x, nextPivot.y,
-                    BLACK
+                    GREEN
                 );
+                if (pivotIndex < spline1.pivotCount - 2) {
+                    DrawCircle(nextPivot.x, nextPivot.y, RADIUS / 5, GREEN);
+                }
+            }
+
+            for (int pivotIndex = 0; pivotIndex < spline2.pivotCount - 1; ++pivotIndex) {
+                Pivot currentPivot = spline2.pivots[pivotIndex];
+                Pivot nextPivot = spline2.pivots[pivotIndex  + 1];
+                DrawLine(
+                    currentPivot.x, currentPivot.y,
+                    nextPivot.x, nextPivot.y,
+                    GREEN
+                );
+                if (pivotIndex < spline2.pivotCount - 2) {
+                    DrawCircle(nextPivot.x, nextPivot.y, RADIUS / 3, GREEN);
+                }
+            }
+
+            for (int pivotIndex = 0; pivotIndex < spline3.pivotCount - 1; ++pivotIndex) {
+                Pivot currentPivot = spline3.pivots[pivotIndex];
+                Pivot nextPivot = spline3.pivots[pivotIndex  + 1];
+                DrawLine(
+                    currentPivot.x, currentPivot.y,
+                    nextPivot.x, nextPivot.y,
+                    GREEN
+                );
+                if (pivotIndex < spline3.pivotCount - 2) {
+                    DrawCircle(nextPivot.x, nextPivot.y, RADIUS / 3, GREEN);
+                }
             }
 
             int mouseX = GetMouseX();
@@ -110,7 +141,9 @@ void main() {
             int x = width / 2 - textWidth / 2;
             int y = height / 2 - textHeight / 2;
             DrawText(text, x, y, textHeight, BLACK);
-            delete_line(spline);
+            delete_line(spline1);
+            delete_line(spline2);
+            delete_line(spline3);
         EndDrawing();
     }
 
