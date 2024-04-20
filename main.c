@@ -1,4 +1,5 @@
 #include "stdio.h"
+#include "math.h"
 #include "stdlib.h"
 #include "assert.h"
 #include "string.h"
@@ -20,6 +21,16 @@ float calculate_line(float x, float a, float b) {
     return a * x + b;
 }
 
+float distance(float x0, float y0, float x1, float y1) {
+    float x = pow(x0 - x1, 2);
+    float y = pow(y0 - y1, 2);
+    return sqrt(x + y);
+}
+
+bool is_point_inside_pivot(float x, float y, float x0, float y0, float radius) {
+    return distance(x, y, x0, y0) < radius;
+}
+
 Line create_line(Pivot start, Pivot stop, int steps) {
     int total_length = 2 + steps;
     float step = (stop.x - start.x) / steps;
@@ -38,25 +49,19 @@ Line create_line(Pivot start, Pivot stop, int steps) {
     return line;
 }
 
+Line allocate_line(int length) {
+    Pivot* pivots = malloc(sizeof(Pivot) * length);
+    Line line = { .pivots = pivots, .pivotCount = length };
+    return line;
+}
+
 void delete_line(Line line) {
     free(line.pivots);
 }
 
 Line create_spline(Pivot start, Pivot stop, Pivot middle, int steps) {
-    Line first = create_line(start, middle, steps / 2);
-    Line second = create_line(middle, stop, steps / 2);
-    int length = first.pivotCount + second.pivotCount - 1;
-    Pivot* output = malloc(sizeof(Pivot) * length);
-    memcpy(output, first.pivots, sizeof(Pivot) * first.pivotCount);
-    memcpy(
-        output + first.pivotCount,
-        second.pivots + 1,
-        sizeof(Pivot) * (second.pivotCount - 1)
-    );
-    delete_line(first);
-    delete_line(second);
-    Line result = { .pivots = output, .pivotCount = length };
-    return result;
+    Line line = allocate_line(steps);
+    return line;
 }
 
 void main() {
@@ -94,14 +99,34 @@ void main() {
                 );
             }
 
+            int mouseX = GetMouseX();
+            int mouseY = GetMouseY();
             for (int pivotIndex = 0; pivotIndex < line.pivotCount; ++pivotIndex) {
                 Pivot pivot = line.pivots[pivotIndex];
-                DrawCircle(pivot.x, pivot.y, RADIUS, RED);
+                Color color = BLUE;
+                if (is_point_inside_pivot(mouseX, mouseY, pivot.x, pivot.y, RADIUS)) {
+                    color = RED;
+                    if (IsMouseButtonDown(0)) {
+                        pivot.x = mouseX;
+                        pivot.y = mouseY;
+                        line.pivots[pivotIndex] = pivot;
+                    }
+                }
+                DrawCircle(pivot.x, pivot.y, RADIUS, color);
             }
 
             for (int pivotIndex = 0; pivotIndex < spline.pivotCount; ++pivotIndex) {
                 Pivot pivot = spline.pivots[pivotIndex];
-                DrawCircle(pivot.x, pivot.y, RADIUS, RED);
+                Color color = BLUE;
+                if (is_point_inside_pivot(mouseX, mouseY, pivot.x, pivot.y, RADIUS)) {
+                    color = RED;
+                    if (IsMouseButtonDown(0)) {
+                        pivot.x = mouseX;
+                        pivot.y = mouseY;
+                        line.pivots[pivotIndex] = pivot;
+                    }
+                }
+                DrawCircle(pivot.x, pivot.y, RADIUS, color);
             }
 
             int width = GetScreenWidth();
